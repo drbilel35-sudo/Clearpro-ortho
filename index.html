@@ -2840,38 +2840,90 @@
                 }, 2000);
             }
 
-            // Contact form handler
-            function handleContactForm(e) {
-                e.preventDefault();
-                const submitBtn = document.querySelector('#contactForm button[type="submit"]');
-                const originalText = submitBtn.innerHTML;
-                
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
-                submitBtn.disabled = true;
+            // Contact form handler for Formspree
+function handleContactForm(e) {
+    e.preventDefault();
+    const submitBtn = document.querySelector('#contactForm button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+    submitBtn.disabled = true;
 
-                const formData = new FormData(document.getElementById('contactForm'));
-                const templateParams = {
-                    from_name: formData.get('name'),
-                    from_email: formData.get('email'),
-                    clinic: formData.get('clinic') || 'Not provided',
-                    subject: formData.get('subject'),
-                    message: formData.get('message')
-                };
+    // Validate form first
+    if (!validateContactForm()) {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+        return;
+    }
 
-                emailjs.send("service_uepb4l3", "template_di1a4vu", templateParams)
-                    .then(function(response) {
-                        showAlert('Thank you! Your message has been sent successfully.', 'success');
-                        document.getElementById('contactForm').reset();
-                    }, function(error) {
-                        console.error('EmailJS error:', error);
-                        showAlert('There was a problem sending your message. Please try again later.', 'error');
-                    })
-                    .finally(() => {
-                        submitBtn.innerHTML = originalText;
-                        submitBtn.disabled = false;
-                    });
-            }
+    const formData = {
+        name: document.getElementById('name').value,
+        email: document.getElementById('email').value,
+        clinic: document.getElementById('clinic').value || 'Not provided',
+        subject: document.getElementById('subject').value,
+        message: document.getElementById('message').value
+    };
 
+    // Send to Formspree
+    fetch('https://formspree.io/f/xwpwweqz', {
+        method: 'POST',
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => {
+        if (response.ok) {
+            showAlert('Thank you! Your message has been sent successfully. We will respond within 24 hours.', 'success');
+            document.getElementById('contactForm').reset();
+        } else {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+    })
+    .catch(error => {
+        console.error('Form submission error:', error);
+        showAlert('There was a problem sending your message. Please try again later or email us directly at contact@clearpro-ortho.com', 'error');
+    })
+    .finally(() => {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    });
+}
+
+// Form validation
+function validateContactForm() {
+    const name = document.getElementById('name').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const message = document.getElementById('message').value.trim();
+    
+    if (!name) {
+        showAlert('Please enter your name', 'error');
+        return false;
+    }
+    
+    if (!email) {
+        showAlert('Please enter your email address', 'error');
+        return false;
+    }
+    
+    if (!isValidEmail(email)) {
+        showAlert('Please enter a valid email address', 'error');
+        return false;
+    }
+    
+    if (!message) {
+        showAlert('Please enter your message', 'error');
+        return false;
+    }
+    
+    return true;
+}
+
+function isValidEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+}
             // User menu functions
             function showUserMenu(user) {
                 const authButtons = document.getElementById('authButtons');
